@@ -10,23 +10,21 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-if(POLICY CMP0071) # Let AUTOMOC and AUTOUIC process GENERATED files.
-  cmake_policy(SET CMP0071 NEW)
-endif()
-if(POLICY CMP0072) # FindOpenGL prefers GLVND by default when available.
-  cmake_policy(SET CMP0072 NEW)
-endif()
-if(POLICY CMP0079) # `target_link_libraries()` allows use with targets in other directories.
-  cmake_policy(SET CMP0079 NEW)
-endif()
-if(POLICY CMP0082) # Install rules from add_subdirectory() calls are interleaved with those in caller.
+# Let AUTOMOC and AUTOUIC process GENERATED files.
+cmake_policy(SET CMP0071 NEW)
+# FindOpenGL prefers GLVND by default when available.
+cmake_policy(SET CMP0072 NEW)
+#`target_link_libraries()` allows use with targets in other directories.
+cmake_policy(SET CMP0079 NEW)
+# Let parent project set child project options (used to skip python lookup from manifold & force TBB)
+cmake_policy(SET CMP0079 NEW)
+if(POLICY CMP0082) # Since CMake 3.14
+  # Install rules from add_subdirectory() calls are interleaved with those in caller.
   cmake_policy(SET CMP0082 NEW)
 endif()
-if(POLICY CMP0077) # Let parent project set child project options (used to skip python lookup from manifold & force TBB)
-  cmake_policy(SET CMP0079 NEW)
-endif()
-if(POLICY CMP0167) # Use upstream's FindBoost.cmake to find Boost libraries.
-  cmake_policy(SET CMP0167 NEW) # Use upstream's FindBoost.cmake to find Boost libraries.
+if(POLICY CMP0167) # Since CMake 3.30
+  # Use upstream's FindBoost.cmake to find Boost libraries.
+  cmake_policy(SET CMP0167 NEW)
 endif()
 
 include("cmake/Modules/openscad_version.cmake")
@@ -471,18 +469,13 @@ target_link_libraries(OpenSCAD PRIVATE ${LIBXML2_LIBRARIES})
 
 if(ENABLE_PYTHON)
   find_package(Python REQUIRED COMPONENTS Interpreter Development)
-  find_package(Nettle 3.4)
-  if(NOT Nettle_FOUND)
-    message(WARNING "Nettle not found, disabling python support.")
-    set(ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
-  else()
-    message(STATUS "Python ${Python_VERSION} enabled, using Nettle ${Nettle_VERSION}")
-    target_include_directories(OpenSCAD PRIVATE ${Python_INCLUDE_DIRS})
-    target_link_libraries(OpenSCAD PRIVATE ${Python_LIBRARIES})
-    target_include_directories(OpenSCAD PRIVATE ${Nettle_INCLUDE_DIRS})
-    target_link_libraries(OpenSCAD PRIVATE ${Nettle_LIBRARIES})
-    add_custom_target(OpenSCADPython ALL COMMAND ${CMAKE_COMMAND} -E create_symlink openscad${SUFFIX_WITH_DASH} "openscad-python")
-  endif()
+  find_package(Nettle 3.4 REQUIRED)
+  message(STATUS "Python ${Python_VERSION} enabled, using Nettle ${Nettle_VERSION}")
+  target_include_directories(OpenSCAD PRIVATE ${Python_INCLUDE_DIRS})
+  target_link_libraries(OpenSCAD PRIVATE ${Python_LIBRARIES})
+  target_include_directories(OpenSCAD PRIVATE ${Nettle_INCLUDE_DIRS})
+  target_link_libraries(OpenSCAD PRIVATE ${Nettle_LIBRARIES})
+  add_custom_target(OpenSCADPython ALL COMMAND ${CMAKE_COMMAND} -E create_symlink openscad${SUFFIX_WITH_DASH} "openscad-python")
 endif()
 
 if(ENABLE_HIDAPI)
@@ -938,6 +931,7 @@ endif()
 set(CGAL_SOURCES
   src/geometry/cgal/cgalutils.cc
   src/geometry/cgal/cgalutils-applyops.cc
+  src/geometry/cgal/cgalutils-applyops-minkowski.cc
   src/geometry/cgal/cgalutils-closed.cc
   src/geometry/cgal/cgalutils-convex.cc
   src/geometry/cgal/cgalutils-kernel.cc
